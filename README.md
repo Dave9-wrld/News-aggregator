@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Nexa / The Global Dispatch 📰
+### Commercial Real-Time Global News & Financial Intelligence Platform
+Built with **Next.js 16.3 (Turbopack, App Router)**, **React 19**, and **Tailwind CSS v4**.
 
-## Getting Started
+---
 
-First, run the development server:
+## ⚡ Quick Start
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Start the local server**:
+   ```bash
+   npm run dev
+   ```
+   Open **[http://localhost:3000](http://localhost:3000)**.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+3. **Production Build**:
+   ```bash
+   npm run build
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🚀 Key Features
 
-To learn more about Next.js, take a look at the following resources:
+* **Multi-Tier Live Ingestion**: GNews API $\rightarrow$ NewsAPI $\rightarrow$ Google News Live RSS Engine $\rightarrow$ Offline Safety Net.
+* **Live Financial & Crypto Ticker Tape**: Real-time tracking of S&P 500, NASDAQ, DOW, BTC, ETH, NVIDIA, Apple, Gold, and Oil.
+* **AI Executive Intelligence**: Automatic 3-bullet takeaways, market impact analysis, reading metrics, and sentiment grading.
+* **Universal In-App Neural Translator**: Live translation for 9 world languages (EN, ES, FR, DE, IT, PT, ZH, JA, AR).
+* **Text-to-Speech (TTS) Voice Narration**: Hands-free voice playback on all dispatches, lead stories, and morning reports.
+* **Executive Morning Briefing**: 1-click intelligence dossier compilation with **Copy Markdown** and **Download File (.md)**.
+* **Reading List & JSON Archive**: Local bookmarking with in-drawer search and **Export to JSON**.
+* **Smart Topic Imagery**: Dynamic keyword-inferred high-res visual engine.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📚 In-Depth Technical Documentation
+For full API endpoint specifications, payload schemas, and architecture breakdown, please see **[DOCUMENTATION.md](./DOCUMENTATION.md)**.
