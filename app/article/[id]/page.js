@@ -68,7 +68,7 @@ export default async function ArticlePage({ params }) {
   const article = await findArticleById(id);
 
   return (
-    <main className="min-h-screen bg-[#0a0c10] text-[#f8fafc]">
+    <main className="min-h-screen bg-[#f8faf9] text-[#112117]">
       <ArticleReaderView article={article} />
     </main>
   );

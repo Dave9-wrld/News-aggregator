@@ -16,6 +16,28 @@ const GNEWS_CATEGORIES = {
   health: "health",
 };
 
+// In-Memory API Cache to prevent burning through 100 requests/day quota
+const apiCache = new Map();
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes cache per unique query/category
+
+function getCached(key) {
+  const item = apiCache.get(key);
+  if (!item) return null;
+  if (Date.now() - item.timestamp > CACHE_TTL_MS) {
+    apiCache.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setCache(key, data) {
+  if (apiCache.size > 200) {
+    const firstKey = apiCache.keys().next().value;
+    apiCache.delete(firstKey);
+  }
+  apiCache.set(key, { data, timestamp: Date.now() });
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "headlines";
@@ -187,6 +209,10 @@ function deduplicateArticles(articles) {
 async function fetchFromGNews({ isSearch, query, category, country, limit }) {
   if (!GNEWS_API_KEY) return null;
 
+  const cacheKey = `gnews:${isSearch}:${query}:${category}:${country}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   const maxResults = 10;
   let url = "";
 
@@ -234,6 +260,7 @@ async function fetchFromGNews({ isSearch, query, category, country, limit }) {
         description: cleanD,
         url: a.url,
         urlToImage: a.image || null,
+        isStockImage: !a.image,
         publishedAt: a.publishedAt,
         content: cleanText(a.content) || cleanD,
         category: category || "general",
@@ -246,12 +273,18 @@ async function fetchFromGNews({ isSearch, query, category, country, limit }) {
       return articleItem;
     });
 
-  return { totalResults: data.totalArticles || articles.length, articles };
+  const result = { totalResults: data.totalArticles || articles.length, articles };
+  setCache(cacheKey, result);
+  return result;
 }
 
 // ─── NewsAPI Provider ────────────────────────────────────────────────
 async function fetchFromNewsAPI({ isSearch, query, category, country, source, sortBy, page, pageSize }) {
   if (!NEWS_API_KEY) return null;
+
+  const cacheKey = `newsapi:${isSearch}:${query}:${category}:${country}:${source}:${page}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
 
   const BASE_URL = "https://newsapi.org/v2";
   let targetUrl;
@@ -303,6 +336,7 @@ async function fetchFromNewsAPI({ isSearch, query, category, country, source, so
         description: cleanD,
         content: cleanText(a.content) || cleanD,
         category: category || "general",
+        isStockImage: !a.urlToImage,
         sentiment: "neutral",
         sentimentLabel: "Standard Wire",
         tag: "NewsAPI",
@@ -312,7 +346,9 @@ async function fetchFromNewsAPI({ isSearch, query, category, country, source, so
       return articleItem;
     });
 
-  return { totalResults: data.totalResults || articles.length, articles };
+  const result = { totalResults: data.totalResults || articles.length, articles };
+  setCache(cacheKey, result);
+  return result;
 }
 
 // ─── Sources Handler ─────────────────────────────────────────────────

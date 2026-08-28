@@ -279,15 +279,15 @@ export default function HomePage() {
   const gridArticles = articles.length > 1 ? articles.slice(1) : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07090e] text-[#f8fafc] relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#f8faf9] text-[#112117] relative overflow-x-hidden">
       
       {/* Top Ambient Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(56,189,248,0.07),transparent_70%)] pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(22,131,79,0.04),transparent_70%)] pointer-events-none -z-10" />
 
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-[#0f1524]/95 backdrop-blur-md text-white border border-[#2b3a55] shadow-[0_10px_35px_rgba(0,0,0,0.7)] text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
-          <div className="w-5 h-5 rounded-full bg-[#38bdf8]/20 flex items-center justify-center text-[#38bdf8]">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-white/95 backdrop-blur-md text-[#112117] border border-[#e1ece5] shadow-[0_10px_35px_rgba(0,0,0,0.08)] text-xs font-semibold animate-in fade-in slide-in-from-bottom-3">
+          <div className="w-5 h-5 rounded-full bg-[#eaf5ee] flex items-center justify-center text-[#16834f]">
             <Check className="w-3.5 h-3.5" />
           </div>
           <span>{toastMessage}</span>
@@ -311,43 +311,41 @@ export default function HomePage() {
       />
 
       {/* Main Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         
         {/* Fallback Warning Notice */}
         {isFallbackData && !isLoading && (
-          <div className="mb-8 flex items-start gap-3 p-4 rounded-xl bg-[#23170d]/80 backdrop-blur-sm border border-[#d97706]/40 text-[#fde68a] text-xs">
-            <AlertTriangle className="w-5 h-5 text-[#f59e0b] shrink-0 mt-0.5" />
+          <div className="mb-6 sm:mb-8 flex items-start gap-3 p-4 rounded-xl bg-amber-50/90 backdrop-blur-sm border border-amber-200 text-amber-900 text-xs">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-white">Live News Feed Standby / Curated Dispatches Active</p>
-              <p className="mt-1 text-[#fcd34d]/90 leading-relaxed font-sans">
+              <p className="font-semibold text-amber-950">Live News Feed Standby / Curated Dispatches Active</p>
+              <p className="mt-1 text-amber-800 leading-relaxed font-sans">
                 Currently showing verified sample dispatches. Live wire feeds will automatically reconnect on the next cycle.
               </p>
             </div>
           </div>
         )}
 
-
-
         {/* Loading Skeleton */}
         {isLoading && articles.length === 0 ? (
           <LoadingSkeleton />
         ) : error && articles.length === 0 ? (
           <div className="text-center py-20 px-4 max-w-md mx-auto">
-            <AlertCircle className="w-10 h-10 text-[#ef4444] mx-auto mb-3" />
-            <h3 className="text-base font-bold text-white mb-1">Service Unreachable</h3>
-            <p className="text-xs text-[#94a3b8] mb-5 leading-relaxed font-sans">{error}</p>
+            <AlertCircle className="w-10 h-10 text-[#b91c1c] mx-auto mb-3" />
+            <h3 className="text-base font-bold text-[#112117] mb-1">Service Unreachable</h3>
+            <p className="text-xs text-[#455c50] mb-5 leading-relaxed font-sans">{error}</p>
             <button
               onClick={() => fetchArticles(1, false)}
-              className="px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-lg cursor-pointer"
+              className="px-5 py-2.5 bg-[#16834f] hover:bg-[#126d41] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
             >
               Retry
             </button>
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-24 px-4 max-w-md mx-auto">
-            <Search className="w-10 h-10 text-[#64748b] mx-auto mb-3" />
-            <h3 className="text-base font-bold text-white mb-1">No Matching Articles Found</h3>
-            <p className="text-xs text-[#94a3b8] mb-5 leading-relaxed font-sans">
+            <Search className="w-10 h-10 text-[#738c7f] mx-auto mb-3" />
+            <h3 className="text-base font-bold text-[#112117] mb-1">No Matching Articles Found</h3>
+            <p className="text-xs text-[#455c50] mb-5 leading-relaxed font-sans">
               No dispatches found for your query. Try broadening your search keywords.
             </p>
             <button
@@ -357,7 +355,7 @@ export default function HomePage() {
                 setSelectedCategory("all");
                 setSelectedSource("all");
               }}
-              className="px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-lg cursor-pointer"
+              className="px-5 py-2.5 bg-[#16834f] hover:bg-[#126d41] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
             >
               Return to Top Stories
             </button>
@@ -378,10 +376,10 @@ export default function HomePage() {
             )}
 
             {/* Section Header */}
-            <div className="flex items-center justify-between pb-3.5 mb-7 border-b border-[#182030]">
+            <div className="flex items-center justify-between pb-3.5 mb-6 sm:mb-7 border-b border-[#e1ece5]">
               <div className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                <h2 className="text-base sm:text-lg font-bold font-editorial text-white uppercase tracking-wider">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#16834f]" />
+                <h2 className="text-base sm:text-lg font-bold font-editorial text-[#112117] uppercase tracking-wider">
                   {activeQuery
                     ? `Search Results: "${activeQuery}"`
                     : selectedCategory !== "all"
@@ -392,7 +390,7 @@ export default function HomePage() {
             </div>
 
             {/* Card Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-7">
               {(activeQuery || page > 1 ? articles : gridArticles).map((article, idx) => (
                 <NewsCard
                   key={article.id || article.url || article.title || idx}
@@ -410,20 +408,20 @@ export default function HomePage() {
 
             {/* Load More */}
             {hasMore && !isLoading && (
-              <div className="mt-14 flex justify-center">
+              <div className="mt-12 sm:mt-14 flex justify-center">
                 <button
                   onClick={handleLoadMore}
-                  className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-[#101624] to-[#0c101a] hover:from-[#172032] hover:to-[#101622] text-[#cbd5e1] hover:text-white border border-[#202c42] hover:border-[#38bdf8]/50 text-xs font-semibold uppercase tracking-wider transition-all duration-300 shadow-[0_4px_25px_rgba(0,0,0,0.5)] hover:shadow-[0_4px_30px_rgba(56,189,248,0.18)] cursor-pointer hover:scale-[1.02]"
+                  className="flex items-center gap-2 px-8 py-3 rounded-xl bg-white hover:bg-[#f0f5f2] text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] text-xs font-semibold uppercase tracking-wider transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer"
                 >
                   <span>Load More Stories</span>
-                  <ChevronRight className="w-4 h-4 text-[#38bdf8]" />
+                  <ChevronRight className="w-4 h-4 text-[#16834f]" />
                 </button>
               </div>
             )}
 
             {isLoading && articles.length > 0 && (
               <div className="mt-10 flex justify-center">
-                <div className="h-7 w-7 rounded-full border-2 border-[#38bdf8] border-t-transparent animate-spin" />
+                <div className="h-7 w-7 rounded-full border-2 border-[#16834f] border-t-transparent animate-spin" />
               </div>
             )}
           </div>

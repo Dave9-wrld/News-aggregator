@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, FileText, Copy, Download, Volume2, VolumeX, Check, Sparkles, Clock, Globe } from "lucide-react";
+import { X, Copy, Download, Volume2, VolumeX, Check, Sparkles } from "lucide-react";
 import { useAudioPlayer } from "@/lib/AudioContext";
 
 export default function BriefingDrawer({
@@ -87,81 +87,82 @@ export default function BriefingDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden animate-in fade-in duration-200">
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-black/75 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-[#112117]/40 backdrop-blur-xs transition-opacity"
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-xl bg-[#0b0e14] border-l border-[#232936] p-6 flex flex-col justify-between shadow-2xl overflow-y-auto">
+      <div className="fixed inset-y-0 right-0 max-w-full flex">
+        <div className="w-screen max-w-full sm:max-w-xl bg-white border-l border-[#e1ece5] p-5 sm:p-6 flex flex-col justify-between shadow-2xl overflow-y-auto">
           
           <div>
             {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-[#232936]">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155]">
+            <div className="flex items-center justify-between pb-4 border-b border-[#e1ece5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#eaf5ee] text-[#16834f] border border-[#a7ccb5] flex items-center justify-center">
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  <h3 className="text-sm font-bold text-[#112117] uppercase tracking-wider">
                     Executive Morning Briefing
                   </h3>
-                  <p className="text-[11px] text-[#64748b]">{today}</p>
+                  <p className="text-[11px] text-[#738c7f] font-mono">{today}</p>
                 </div>
               </div>
 
               <button
                 onClick={onClose}
-                className="p-1.5 text-[#64748b] hover:text-white rounded transition-colors"
+                className="p-1.5 text-[#738c7f] hover:text-[#112117] rounded-lg hover:bg-[#f0f5f2] transition-colors"
+                aria-label="Close briefing"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Actions Bar */}
-            <div className="flex items-center gap-2 my-4 pt-1">
+            <div className="flex flex-wrap items-center gap-2 my-4 pt-1">
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141a24] hover:bg-[#1f2838] text-[#cbd5e1] border border-[#2a3447] rounded text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] rounded-lg text-xs font-semibold transition-colors cursor-pointer"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-[#16834f]" /> : <Copy className="w-3.5 h-3.5 text-[#16834f]" />}
                 <span>{copied ? "Copied!" : "Copy Markdown"}</span>
               </button>
 
               <button
                 onClick={handleDownload}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#141a24] hover:bg-[#1f2838] text-[#cbd5e1] border border-[#2a3447] rounded text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] rounded-lg text-xs font-semibold transition-colors cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-[#38bdf8]" />
+                <Download className="w-3.5 h-3.5 text-[#16834f]" />
                 <span>Export File</span>
               </button>
 
               <button
                 onClick={handleTextToSpeech}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold transition-colors border ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border cursor-pointer ${
                   isBriefingSpeaking
-                    ? "bg-[#b91c1c] text-white border-red-500 animate-pulse"
-                    : "bg-[#141a24] hover:bg-[#1f2838] text-[#cbd5e1] border-[#2a3447]"
+                    ? "bg-red-50 text-red-700 border-red-200 animate-pulse"
+                    : "bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#112117] border-[#e1ece5] hover:border-[#a7ccb5]"
                 }`}
               >
-                {isBriefingSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#38bdf8]" />}
+                {isBriefingSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#16834f]" />}
                 <span>{isBriefingSpeaking ? "Stop Voice" : "Listen (TTS)"}</span>
               </button>
             </div>
 
             {/* Briefing Feed */}
-            <div className="space-y-4 mt-4">
+            <div className="space-y-3.5 mt-4">
               {topStories.map((article, idx) => (
                 <div
                   key={article.url || article.id || idx}
-                  className="p-4 rounded-lg bg-[#111622] border border-[#232936] hover:border-[#38455e] transition-colors"
+                  className="p-4 rounded-xl bg-white border border-[#e1ece5] hover:border-[#a7ccb5] transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded bg-[#1e293b] text-[#38bdf8] border border-[#334155] text-[10px] font-bold uppercase tracking-wider">
+                    <span className="px-2 py-0.5 rounded bg-[#eaf5ee] text-[#16834f] border border-[#a7ccb5] text-[10px] font-bold uppercase tracking-wider">
                       Item #{idx + 1} • {article.source?.name || "Global Wire"}
                     </span>
-                    <span className="text-[10px] text-[#64748b] font-mono">
+                    <span className="text-[10px] text-[#738c7f] font-mono">
                       {article.readTime || "2m read"}
                     </span>
                   </div>
@@ -171,17 +172,17 @@ export default function BriefingDrawer({
                       onOpenArticle(article);
                       onClose();
                     }}
-                    className="text-sm font-editorial font-bold text-white hover:text-[#93c5fd] transition-colors cursor-pointer leading-snug mb-2"
+                    className="text-sm font-editorial font-bold text-[#112117] hover:text-[#16834f] transition-colors cursor-pointer leading-snug mb-2"
                   >
                     {article.title}
                   </h4>
 
-                  <p className="text-xs text-[#94a3b8] leading-relaxed line-clamp-3 mb-3">
+                  <p className="text-xs text-[#455c50] leading-relaxed line-clamp-3 mb-3 font-sans">
                     {article.description || article.content}
                   </p>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[#1b202c] text-[11px]">
-                    <span className="text-[#64748b] uppercase tracking-wider text-[10px]">
+                  <div className="flex items-center justify-between pt-2 border-t border-[#e1ece5] text-[11px]">
+                    <span className="text-[#738c7f] uppercase tracking-wider text-[10px]">
                       Section: {article.category || "General"}
                     </span>
                     <button
@@ -189,7 +190,7 @@ export default function BriefingDrawer({
                         onOpenArticle(article);
                         onClose();
                       }}
-                      className="text-[#38bdf8] font-semibold hover:underline"
+                      className="text-[#16834f] font-semibold hover:underline cursor-pointer"
                     >
                       Examine Details →
                     </button>
@@ -201,7 +202,7 @@ export default function BriefingDrawer({
           </div>
 
           {/* Footer Note */}
-          <div className="pt-6 border-t border-[#232936] text-center text-xs text-[#64748b]">
+          <div className="pt-6 border-t border-[#e1ece5] text-center text-xs text-[#738c7f]">
             <p>Generated automatically via real-time global news syndication feeds.</p>
           </div>
 

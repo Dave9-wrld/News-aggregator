@@ -32,9 +32,9 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#07090e] text-[#f8fafc] selection:bg-[#38bdf8]/20 selection:text-[#38bdf8]">
+      <body className="min-h-full flex flex-col bg-[#f8faf9] text-[#112117] selection:bg-[#16834f]/20 selection:text-[#16834f]">
         <AudioProvider>{children}</AudioProvider>
       </body>
     </html>

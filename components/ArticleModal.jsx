@@ -29,7 +29,7 @@ export default function ArticleModal({
   onToggleBookmark,
   onShare,
 }) {
-  const { speakingId, isPlaying, toggleNarration, stopNarration } = useAudioPlayer();
+  const { speakingId, isPlaying, toggleNarration } = useAudioPlayer();
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState("text-base");
   const [summaryData, setSummaryData] = useState(null);
@@ -160,43 +160,45 @@ export default function ArticleModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/85 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto bg-[#112117]/60 backdrop-blur-sm animate-in fade-in duration-200">
       
       {/* Backdrop */}
       <div className="fixed inset-0" onClick={onClose} />
 
-      {/* Modal Card */}
-      <div className="relative w-full max-w-3xl overflow-hidden rounded-2xl border border-[#202c42] bg-[#0b0f19] shadow-[0_25px_70px_rgba(0,0,0,0.8)] z-10 my-6 max-h-[90vh] flex flex-col">
+      {/* Modal Card - Full-screen sheet on mobile, rounded card on tablet/desktop */}
+      <div className="relative w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[90vh] bg-white border border-[#e1ece5] shadow-2xl z-10 sm:rounded-2xl flex flex-col overflow-hidden my-0 sm:my-6">
         
         {/* Top Image Banner */}
-        <div className="relative h-60 sm:h-72 w-full bg-[#07090e] shrink-0 border-b border-[#182030]">
+        <div className="relative h-56 sm:h-72 w-full bg-[#f0f5f2] shrink-0 border-b border-[#e1ece5]">
           <img
             src={imageSrc}
             alt={article.title}
+            referrerPolicy="no-referrer"
             onError={(e) => { 
               e.currentTarget.onerror = null;
               e.currentTarget.src = dynamicFallback; 
             }}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0b0f19] via-[#0b0f19]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
 
-          {/* Top Controls */}
-          <div className="absolute top-4 right-4 flex items-center gap-2">
+          {/* Close button in top-right */}
+          <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-[#07090e]/80 backdrop-blur-md hover:bg-[#161d2d] text-white border border-[#202c42] transition-colors shadow-lg cursor-pointer"
+              className="p-2 rounded-full bg-white/90 hover:bg-white text-[#112117] border border-[#e1ece5] transition-colors shadow-md cursor-pointer"
+              aria-label="Close modal"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Source Tag */}
-          <div className="absolute bottom-4 left-6 flex items-center gap-2">
-            <span className="px-3 py-1 text-xs font-bold rounded-md bg-[#090d16]/95 backdrop-blur-md text-[#38bdf8] border border-[#26344d] uppercase tracking-wider shadow-lg">
+          {/* Source Tag & Verified Badge */}
+          <div className="absolute bottom-3.5 left-4 sm:left-6 flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 text-xs font-bold rounded-md bg-white/95 backdrop-blur-md text-[#16834f] border border-[#e1ece5] uppercase tracking-wider shadow-sm">
               {article.source?.name || "Global Publisher"}
             </span>
-            <span className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md bg-emerald-950/90 text-emerald-400 border border-emerald-800 shadow-lg">
+            <span className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-md bg-[#eaf5ee] text-[#16834f] border border-[#a7ccb5] shadow-sm">
               <ShieldCheck className="w-3.5 h-3.5" />
               Verified Dispatch
             </span>
@@ -204,81 +206,83 @@ export default function ArticleModal({
         </div>
 
         {/* Scrollable Modal Content */}
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+        <div className="p-4 sm:p-7 md:p-8 overflow-y-auto flex-1 bg-white">
           
           {/* Metadata & Controls Row */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#182030] text-xs text-[#828f9f]">
-            <div className="flex items-center gap-3 font-mono">
-              <span className="flex items-center gap-1.5 text-[#cbd5e1] font-medium">
-                <User className="w-3.5 h-3.5 text-[#38bdf8]" />
-                {article.author || "Editorial Intelligence Desk"}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#e1ece5] text-xs text-[#738c7f]">
+            <div className="flex items-center gap-2 sm:gap-3 font-mono">
+              <span className="flex items-center gap-1.5 text-[#112117] font-medium">
+                <User className="w-3.5 h-3.5 text-[#16834f]" />
+                <span className="truncate max-w-[140px] sm:max-w-none">{article.author || "Editorial Desk"}</span>
               </span>
-              <span className="text-[#334155]">•</span>
-              <span className="flex items-center gap-1 text-[#94a3b8]">
-                <Clock className="w-3.5 h-3.5 text-[#38bdf8]" />
+              <span className="text-[#a7ccb5]">•</span>
+              <span className="flex items-center gap-1 text-[#455c50]">
+                <Clock className="w-3.5 h-3.5 text-[#16834f]" />
                 {formattedDate}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Audio Listen */}
               <button
                 onClick={handleToggleAudio}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer ${
                   isCurrentlySpeaking
-                    ? "bg-red-950 text-red-400 border-red-800 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.3)]"
-                    : "bg-[#101624] hover:bg-[#182032] text-[#cbd5e1] border-[#1e273a]"
+                    ? "bg-red-50 text-red-700 border-red-200 animate-pulse shadow-xs"
+                    : "bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#455c50] hover:text-[#112117] border-[#e1ece5] hover:border-[#a7ccb5]"
                 }`}
                 title="Text to Speech Voice Narration"
               >
-                {isCurrentlySpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#38bdf8]" />}
+                {isCurrentlySpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#16834f]" />}
                 <span>{isCurrentlySpeaking ? "Stop" : "Listen"}</span>
               </button>
 
               {/* Font Size Toggle */}
               <button
                 onClick={() => setFontSize(fontSize === "text-base" ? "text-lg" : fontSize === "text-lg" ? "text-sm" : "text-base")}
-                className="p-2 rounded-lg bg-[#101624] hover:bg-[#182032] text-[#cbd5e1] border border-[#1e273a] transition-all cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-lg bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#455c50] hover:text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] transition-all cursor-pointer"
                 title="Adjust Text Size"
               >
-                <Type className="w-3.5 h-3.5" />
+                <Type className="w-3.5 h-3.5 text-[#16834f]" />
               </button>
 
               {/* Bookmark */}
               <button
                 onClick={() => onToggleBookmark(article)}
-                className={`p-2 rounded-lg border border-[#1e273a] transition-all cursor-pointer ${
-                  isBookmarked ? "text-[#38bdf8] bg-[#162032] border-[#2c3d5e]" : "text-[#828f9f] hover:text-white bg-[#101624] hover:bg-[#182032]"
+                className={`p-1.5 sm:p-2 rounded-lg border transition-all cursor-pointer ${
+                  isBookmarked
+                    ? "text-[#16834f] bg-[#eaf5ee] border-[#a7ccb5]"
+                    : "text-[#455c50] hover:text-[#112117] bg-[#f0f5f2] hover:bg-[#eaf5ee] border-[#e1ece5] hover:border-[#a7ccb5]"
                 }`}
                 title="Save Article"
               >
-                <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-[#38bdf8]" : ""}`} />
+                <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-[#16834f]" : ""}`} />
               </button>
 
               {/* Copy / Share */}
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#101624] hover:bg-[#182032] text-[#cbd5e1] border border-[#1e273a] rounded-lg text-xs transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#455c50] hover:text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] rounded-lg text-xs transition-all cursor-pointer"
                 title="Copy Share Link"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
-                <span className="text-[11px]">{copied ? "Copied" : "Share"}</span>
+                {copied ? <Check className="w-3.5 h-3.5 text-[#16834f]" /> : <Share2 className="w-3.5 h-3.5" />}
+                <span className="text-[11px] hidden sm:inline">{copied ? "Copied" : "Share"}</span>
               </button>
             </div>
           </div>
 
           {/* Universal In-App Translator Bar */}
-          <div className="my-5 p-3.5 rounded-xl bg-[#0f1524] border border-[#1f2c42] flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="my-4 sm:my-5 p-3 sm:p-3.5 rounded-xl bg-[#f0f5f2] border border-[#e1ece5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
-              <Languages className="w-4 h-4 text-[#38bdf8]" />
-              <span className="font-semibold text-white">Instant AI Translator:</span>
+              <Languages className="w-4 h-4 text-[#16834f] shrink-0" />
+              <span className="font-semibold text-[#112117] whitespace-nowrap">Instant AI Translator:</span>
               <select
                 value={targetLang}
                 onChange={(e) => {
                   setTargetLang(e.target.value);
                   handleTranslate(e.target.value);
                 }}
-                className="bg-[#151d2e] border border-[#2d3e5c] text-white rounded-lg px-2.5 py-1 text-xs focus:outline-none cursor-pointer"
+                className="flex-1 sm:flex-initial bg-white border border-[#e1ece5] text-[#112117] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#16834f] cursor-pointer"
               >
                 {LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>
@@ -288,11 +292,11 @@ export default function ArticleModal({
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 justify-end">
               {isTranslatedView ? (
                 <button
                   onClick={() => setIsTranslatedView(false)}
-                  className="px-3 py-1.5 rounded-lg bg-[#1a2336] hover:bg-[#25324d] text-[#38bdf8] text-xs font-semibold transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#eaf5ee] text-[#16834f] border border-[#a7ccb5] text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Show Original
                 </button>
@@ -300,7 +304,7 @@ export default function ArticleModal({
                 <button
                   onClick={() => handleTranslate(targetLang)}
                   disabled={isTranslating}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-md"
+                  className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#16834f] hover:bg-[#126d41] text-white text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   {isTranslating && <RefreshCw className="w-3 h-3 animate-spin" />}
                   <span>{isTranslating ? "Translating..." : "Translate to " + (LANGUAGES.find(l => l.code === targetLang)?.label.split(" ")[0] || "English")}</span>
@@ -310,43 +314,43 @@ export default function ArticleModal({
           </div>
 
           {/* Headline */}
-          <h2 className="text-xl sm:text-3xl font-editorial font-bold text-white my-5 leading-tight tracking-tight">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-editorial font-bold text-[#112117] my-4 sm:my-5 leading-tight tracking-tight">
             {currentTitle}
           </h2>
 
           {/* AI Executive Intelligence Section */}
-          <div className="mb-7 p-5 rounded-xl bg-gradient-to-br from-[#121927] to-[#0d1320] border border-[#23334a] shadow-lg">
-            <div className="flex items-center justify-between mb-3.5">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#38bdf8] uppercase tracking-wider font-mono">
-                <Sparkles className="w-4 h-4 text-[#38bdf8]" />
+          <div className="mb-6 sm:mb-7 p-4 sm:p-5 rounded-xl bg-[#f0f5f2] border border-[#a7ccb5]/70 shadow-xs">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#16834f] uppercase tracking-wider font-mono">
+                <Sparkles className="w-4 h-4 text-[#16834f]" />
                 <span>Executive Intelligence & Key Takeaways</span>
               </div>
               {summaryData?.sentiment && (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-md bg-[#162032] text-[#cbd5e1] font-semibold border border-[#2a3c58] font-mono">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-md bg-white text-[#16834f] font-semibold border border-[#a7ccb5] font-mono">
                   Tone: {summaryData.sentiment.tone}
                 </span>
               )}
             </div>
 
             {isLoadingSummary ? (
-              <div className="py-4 flex items-center gap-2.5 text-xs text-[#94a3b8]">
-                <div className="w-4 h-4 rounded-full border-2 border-[#38bdf8] border-t-transparent animate-spin" />
+              <div className="py-3 flex items-center gap-2.5 text-xs text-[#455c50]">
+                <div className="w-4 h-4 rounded-full border-2 border-[#16834f] border-t-transparent animate-spin" />
                 <span>Synthesizing executive brief...</span>
               </div>
             ) : summaryData ? (
-              <div className="space-y-3 text-xs text-[#cbd5e1]">
+              <div className="space-y-2.5 text-xs text-[#455c50]">
                 <ul className="space-y-2">
                   {summaryData.takeaways.map((point, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 leading-relaxed font-sans">
-                      <span className="text-[#38bdf8] font-bold shrink-0 mt-0.5">•</span>
-                      <span>{point}</span>
+                      <span className="text-[#16834f] font-bold shrink-0 mt-0.5">•</span>
+                      <span className="text-[#112117]">{point}</span>
                     </li>
                   ))}
                 </ul>
 
                 {summaryData.marketImpact && (
-                  <div className="mt-3.5 pt-3 border-t border-[#1e2a3d] text-[11px] text-[#94a3b8] font-sans">
-                    <strong className="text-[#cbd5e1]">Market & Sector Impact:</strong> {summaryData.marketImpact}
+                  <div className="mt-3 pt-2.5 border-t border-[#e1ece5] text-[11px] text-[#455c50] font-sans">
+                    <strong className="text-[#112117]">Market & Sector Impact:</strong> {summaryData.marketImpact}
                   </div>
                 )}
               </div>
@@ -354,23 +358,23 @@ export default function ArticleModal({
           </div>
 
           {/* Article Description & Content Body */}
-          <div className={`space-y-4 text-[#cbd5e1] ${fontSize} leading-relaxed font-sans`}>
+          <div className={`space-y-4 text-[#112117] ${fontSize} leading-relaxed font-sans`}>
             {currentDesc && (
-              <p className="text-white font-medium border-l-3 border-[#2563eb] pl-4 py-2 italic bg-[#0f1422] rounded-r-lg">
+              <p className="text-[#112117] font-medium border-l-4 border-[#16834f] pl-4 py-2 italic bg-[#f0f5f2] rounded-r-lg">
                 {currentDesc}
               </p>
             )}
 
             {currentContent && currentContent !== currentDesc && (
-              <p className="text-[#94a3b8] leading-relaxed">
+              <p className="text-[#455c50] leading-relaxed">
                 {currentContent}
               </p>
             )}
           </div>
 
           {/* Outbound Link & Deep Permalink */}
-          <div className="mt-8 pt-6 border-t border-[#1b202c] flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-[#64748b]">
+          <div className="mt-7 sm:mt-8 pt-5 sm:pt-6 border-t border-[#e1ece5] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-xs text-[#738c7f]">
               Full investigative text syndicated from official wires by <strong>{article.source?.name || "the publisher"}</strong>.
             </p>
 
@@ -380,7 +384,7 @@ export default function ArticleModal({
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold rounded text-xs uppercase tracking-wider transition-colors shadow-lg"
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-[#16834f] hover:bg-[#126d41] text-white font-semibold rounded-lg text-xs uppercase tracking-wider transition-colors shadow-sm"
                 >
                   <span>Read on {article.source?.name || "Official Source"}</span>
                   <ExternalLink className="w-4 h-4" />
