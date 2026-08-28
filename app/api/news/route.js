@@ -3,6 +3,10 @@ import { FALLBACK_ARTICLES, FALLBACK_SOURCES } from "@/lib/mockNews";
 import { getLiveGoogleNews, cleanHtmlEntities } from "@/lib/rssNews";
 import { generateArticleId } from "@/lib/articleUtils";
 
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
 const NEWS_API_KEY = process.env.NEWS_API_KEY || "";
 
@@ -237,45 +241,54 @@ async function fetchFromGNews({ isSearch, query, category, country, limit }) {
     url = `https://gnews.io/api/v4/top-headlines?${params.toString()}`;
   }
 
-  const res = await fetch(url, {
-    headers: { "User-Agent": "NexaNewsAggregator/2.0" },
-    next: { revalidate: 60 },
-  });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
 
-  if (!res.ok) return null;
-
-  const data = await res.json();
-  if (!data.articles || data.articles.length === 0) return null;
-
-  const articles = data.articles
-    .filter((a) => a.title && a.title !== "[Removed]")
-    .map((a) => {
-      const cleanT = cleanText(a.title);
-      const cleanD = cleanText(a.description);
-      const wordCount = (cleanT + " " + cleanD).split(/\s+/).length;
-      const articleItem = {
-        source: { id: slugify(a.source?.name || "news"), name: a.source?.name || "News Wire" },
-        author: a.author || a.source?.name || null,
-        title: cleanT,
-        description: cleanD,
-        url: a.url,
-        urlToImage: a.image || null,
-        isStockImage: !a.image,
-        publishedAt: a.publishedAt,
-        content: cleanText(a.content) || cleanD,
-        category: category || "general",
-        sentiment: "neutral",
-        sentimentLabel: "Standard Wire",
-        tag: "Live Wire",
-        readTime: `${Math.max(1, Math.ceil((wordCount + 180) / 180))}m read`,
-      };
-      articleItem.id = generateArticleId(articleItem);
-      return articleItem;
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "NexaNewsAggregator/2.0" },
+      next: { revalidate: 60 },
     });
+    clearTimeout(timeout);
 
-  const result = { totalResults: data.totalArticles || articles.length, articles };
-  setCache(cacheKey, result);
-  return result;
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!data.articles || data.articles.length === 0) return null;
+
+    const articles = data.articles
+      .filter((a) => a.title && a.title !== "[Removed]")
+      .map((a) => {
+        const cleanT = cleanText(a.title);
+        const cleanD = cleanText(a.description);
+        const wordCount = (cleanT + " " + cleanD).split(/\s+/).length;
+        const articleItem = {
+          source: { id: slugify(a.source?.name || "news"), name: a.source?.name || "News Wire" },
+          author: a.author || a.source?.name || null,
+          title: cleanT,
+          description: cleanD,
+          url: a.url,
+          urlToImage: a.image || null,
+          isStockImage: !a.image,
+          publishedAt: a.publishedAt,
+          content: cleanText(a.content) || cleanD,
+          category: category || "general",
+          sentiment: "neutral",
+          sentimentLabel: "Standard Wire",
+          tag: "Live Wire",
+          readTime: `${Math.max(1, Math.ceil((wordCount + 180) / 180))}m read`,
+        };
+        articleItem.id = generateArticleId(articleItem);
+        return articleItem;
+      });
+
+    const result = { totalResults: data.totalArticles || articles.length, articles };
+    setCache(cacheKey, result);
+    return result;
+  } catch (err) {
+    return null;
+  }
 }
 
 // ─── NewsAPI Provider ────────────────────────────────────────────────
@@ -316,39 +329,50 @@ async function fetchFromNewsAPI({ isSearch, query, category, country, source, so
     targetUrl = `${BASE_URL}/top-headlines?${params.toString()}`;
   }
 
-  const res = await fetch(targetUrl, {
-    headers: { "User-Agent": "NexaNewsAggregator/2.0" },
-    next: { revalidate: 60 },
-  });
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
 
-  const data = await res.json();
-  if (!res.ok || data.status === "error" || !data.articles?.length) return null;
-
-  const articles = data.articles
-    .filter((a) => a.title && !a.title.includes("[Removed]"))
-    .map((a) => {
-      const cleanT = cleanText(a.title);
-      const cleanD = cleanText(a.description);
-      const wordCount = (cleanT + " " + cleanD).split(/\s+/).length;
-      const articleItem = {
-        ...a,
-        title: cleanT,
-        description: cleanD,
-        content: cleanText(a.content) || cleanD,
-        category: category || "general",
-        isStockImage: !a.urlToImage,
-        sentiment: "neutral",
-        sentimentLabel: "Standard Wire",
-        tag: "NewsAPI",
-        readTime: `${Math.max(1, Math.ceil((wordCount + 180) / 180))}m read`,
-      };
-      articleItem.id = generateArticleId(articleItem);
-      return articleItem;
+    const res = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: { "User-Agent": "NexaNewsAggregator/2.0" },
+      next: { revalidate: 60 },
     });
+    clearTimeout(timeout);
 
-  const result = { totalResults: data.totalResults || articles.length, articles };
-  setCache(cacheKey, result);
-  return result;
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (data.status === "error" || !data.articles?.length) return null;
+
+    const articles = data.articles
+      .filter((a) => a.title && !a.title.includes("[Removed]"))
+      .map((a) => {
+        const cleanT = cleanText(a.title);
+        const cleanD = cleanText(a.description);
+        const wordCount = (cleanT + " " + cleanD).split(/\s+/).length;
+        const articleItem = {
+          ...a,
+          title: cleanT,
+          description: cleanD,
+          content: cleanText(a.content) || cleanD,
+          category: category || "general",
+          isStockImage: !a.urlToImage,
+          sentiment: "neutral",
+          sentimentLabel: "Standard Wire",
+          tag: "NewsAPI",
+          readTime: `${Math.max(1, Math.ceil((wordCount + 180) / 180))}m read`,
+        };
+        articleItem.id = generateArticleId(articleItem);
+        return articleItem;
+      });
+
+    const result = { totalResults: data.totalResults || articles.length, articles };
+    setCache(cacheKey, result);
+    return result;
+  } catch (err) {
+    return null;
+  }
 }
 
 // ─── Sources Handler ─────────────────────────────────────────────────

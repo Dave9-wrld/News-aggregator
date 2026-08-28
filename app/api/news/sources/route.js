@@ -1,4 +1,6 @@
-﻿import { GET as mainGet } from "../route";
+import { GET as mainGet } from "../route";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   const url = new URL(request.url);
