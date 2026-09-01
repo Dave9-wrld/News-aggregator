@@ -133,7 +133,7 @@ export default function NewsCard({
             className="flex items-center gap-1.5 text-xs font-semibold text-[#16834f] hover:text-[#126d41] uppercase tracking-wider transition-colors cursor-pointer focus:outline-none group/brief shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#16834f] group-hover/brief:rotate-12 transition-transform" />
-            <span>Smart Brief →</span>
+          
           </button>
 
           <div className="flex items-center gap-1 shrink-0">

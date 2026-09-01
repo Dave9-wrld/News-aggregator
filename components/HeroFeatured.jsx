@@ -109,7 +109,7 @@ export default function HeroFeatured({
                 className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-[#16834f] hover:bg-[#126d41] text-white rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-[0_2px_12px_rgba(22,131,79,0.25)] cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-200" />
-                <span>Read Smart Intelligence</span>
+        
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
 
