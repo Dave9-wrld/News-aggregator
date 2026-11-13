@@ -8,6 +8,7 @@ import {
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
+import ArticleDiscussion from "@/components/ArticleDiscussion";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -28,6 +29,8 @@ export default function ArticleModal({
   isBookmarked,
   onToggleBookmark,
   onShare,
+  user,
+  onRequireSignIn,
 }) {
   const { speakingId, isPlaying, toggleNarration } = useAudioPlayer();
   const [copied, setCopied] = useState(false);
@@ -392,6 +395,8 @@ export default function ArticleModal({
               )}
             </div>
           </div>
+
+          <ArticleDiscussion article={article} user={user} onRequireSignIn={onRequireSignIn} />
 
         </div>
 

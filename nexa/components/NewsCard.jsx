@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Share2, Clock, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { Bookmark, Share2, Clock, Volume2, VolumeX, MessageCircle } from "lucide-react";
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
@@ -82,6 +82,9 @@ export default function NewsCard({
           <span className="px-2 py-0.5 rounded-md bg-white/95 backdrop-blur-md border border-[#e1ece5] text-[10px] font-bold text-[#16834f] uppercase tracking-wider shadow-xs">
             {article.source?.name || "News"}
           </span>
+          <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider shadow-xs ${article.kind === "original" ? "bg-[#16834f] text-white" : "bg-white/95 text-[#455c50] border border-[#e1ece5]"}`}>
+            {article.kind === "original" ? "Chronicle Original" : "External News"}
+          </span>
           {getSentimentBadge()}
         </div>
 
@@ -132,8 +135,8 @@ export default function NewsCard({
             onClick={() => onOpenArticle(article)}
             className="flex items-center gap-1.5 text-xs font-semibold text-[#16834f] hover:text-[#126d41] uppercase tracking-wider transition-colors cursor-pointer focus:outline-none group/brief shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#16834f] group-hover/brief:rotate-12 transition-transform" />
-          
+            <MessageCircle className="w-3.5 h-3.5 text-[#16834f]" />
+            <span>Read & discuss ({article.comment_count || 0})</span>
           </button>
 
           <div className="flex items-center gap-1 shrink-0">

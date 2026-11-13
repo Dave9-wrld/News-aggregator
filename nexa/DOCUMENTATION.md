@@ -211,19 +211,11 @@ nexa/
 ## 4. Environment Configuration (`.env.local`)
 
 ```env
-# Primary API Provider (Optional, free tier supported)
-GNEWS_API_KEY=your_gnews_api_key_here
-
-# Secondary API Provider (Optional, free tier supported)
-NEWS_API_KEY=your_news_api_key_here
-
-# Tertiary Provider (Optional)
-CURRENTS_API_KEY=
-
-# Branding
-NEXT_PUBLIC_SITE_NAME=THE GLOBAL DISPATCH
+# Django service address (used by Next's server-side proxy)
+DJANGO_API_URL=http://127.0.0.1:8000/api
+NEXT_PUBLIC_SITE_NAME=THE GLOBAL CHRONICLE
 ```
-> *Note: If no API keys are provided, the platform automatically utilizes its high-speed Google News Live RSS Engine with zero downtime.*
+> Put third-party provider keys only in the Django server environment. See the root `.env.example` and README for setup.
 
 ---
 

@@ -15,7 +15,7 @@ export default function CategoryBar({
   onSelectCategory,
 }) {
   return (
-    <div className="w-full bg-white/90 backdrop-blur-sm border-b border-[#e1ece5] py-2 sticky top-[57px] sm:top-[61px] z-30 transition-colors">
+    <div className="w-full bg-white/90 backdrop-blur-sm border-b border-[#e1ece5] py-2 fixed top-[64px] left-0 right-0 z-30 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <nav className="flex items-center gap-1.5 overflow-x-auto w-full no-scrollbar py-0.5 scroll-smooth">
           {CATEGORIES.map((cat) => {

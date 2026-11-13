@@ -10,7 +10,10 @@ import BookmarksDrawer from "@/components/BookmarksDrawer";
 import BriefingDrawer from "@/components/BriefingDrawer";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import Footer from "@/components/Footer";
-import { Search, AlertCircle, ChevronRight, Check, AlertTriangle } from "lucide-react";
+import AccountDrawer from "@/components/AccountDrawer";
+import AuthorStudio from "@/components/AuthorStudio";
+import { chronicleApi, getToken } from "@/lib/chronicleApi";
+import { Search, AlertCircle, ChevronRight, Check, AlertTriangle, ArrowUp } from "lucide-react";
 
 const PROVIDER_LABELS = {
   gnews: "GNews Intelligence",
@@ -47,6 +50,9 @@ export default function HomePage() {
   const [isBookmarksOpen, setIsBookmarksOpen] = useState(false);
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isStudioOpen, setIsStudioOpen] = useState(false);
 
   const debounceTimerRef = useRef(null);
 
@@ -55,48 +61,40 @@ export default function HomePage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Safe load bookmarks on mount
+  const bookmarkKey = (article) => article?.kind === "original" ? `original-${article.article_id || String(article.id || "").replace("original-", "")}` : article?.external_id || article?.id;
+
+  const asFeedBookmark = (record) => {
+    if (record.article) return { id: `original-${record.article.id}`, kind: "original", article_id: record.article.id, title: record.article.title, description: record.article.body, content: record.article.body, urlToImage: record.article.cover_image, source: { name: "The Global Chronicle" }, author: record.article.author?.username, publishedAt: record.article.published_at || record.article.created_at, bookmarkId: record.id };
+    const article = record.external_article;
+    return { id: article.external_id, external_id: article.external_id, kind: "external", provider: article.provider, title: article.title, description: article.description, content: article.description, url: article.canonical_url, urlToImage: article.image_url, source: { name: article.source_name }, category: article.category, publishedAt: article.published_at, bookmarkId: record.id };
+  };
+
+  // Restore the account and its server-side reading list.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dispatch_news_bookmarks");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setBookmarks(parsed);
-        }
-      }
-    } catch (e) {
-      console.warn("Could not read bookmarks:", e);
-    }
+    if (!getToken()) return;
+    chronicleApi("auth/me").then((account) => { setUser(account); return chronicleApi("bookmarks"); }).then((records) => setBookmarks(records.map(asFeedBookmark))).catch(() => {});
   }, []);
 
   const saveBookmarks = (newBookmarks) => {
     const capped = newBookmarks.slice(0, 100);
     setBookmarks(capped);
-    try {
-      localStorage.setItem("dispatch_news_bookmarks", JSON.stringify(capped));
-    } catch (e) {
-      console.warn("Could not save bookmarks:", e);
-    }
   };
 
-  const handleToggleBookmark = (article) => {
+  const handleToggleBookmark = async (article) => {
     if (!article) return;
-    const exists = bookmarks.some((b) => b.title === article.title || (b.url && b.url === article.url));
-    let updated;
-    if (exists) {
-      updated = bookmarks.filter((b) => b.title !== article.title && b.url !== article.url);
-      showToast("Removed from saved list");
-    } else {
-      updated = [article, ...bookmarks];
-      showToast("Saved to reading list");
-    }
-    saveBookmarks(updated);
+    if (!user) { setIsAccountOpen(true); showToast("Sign in to save articles"); return; }
+    const key = bookmarkKey(article);
+    const existing = bookmarks.find((bookmark) => bookmarkKey(bookmark) === key);
+    try {
+      if (existing) { await chronicleApi(`bookmarks/${existing.bookmarkId}`, { method: "DELETE" }); saveBookmarks(bookmarks.filter((bookmark) => bookmark !== existing)); showToast("Removed from saved list"); return; }
+      const body = article.kind === "original" ? { kind: "original", article_id: article.article_id || String(article.id).replace("original-", "") } : { kind: "external", external: { external_id: article.external_id || article.id, provider: article.provider || "external", url: article.url, title: article.title, description: article.description || "", source: article.source, category: article.category } };
+      const record = await chronicleApi("bookmarks", { method: "POST", body: JSON.stringify(body) });
+      saveBookmarks([asFeedBookmark(record), ...bookmarks]); showToast("Saved to reading list");
+    } catch (error) { showToast(error.message); }
   };
 
   const handleClearAllBookmarks = () => {
-    saveBookmarks([]);
-    showToast("Cleared reading list");
+    Promise.all(bookmarks.map((bookmark) => chronicleApi(`bookmarks/${bookmark.bookmarkId}`, { method: "DELETE" }))).then(() => { saveBookmarks([]); showToast("Cleared reading list"); });
   };
 
   const handleShare = (article) => {
@@ -127,7 +125,7 @@ export default function HomePage() {
         if (selectedCategory && selectedCategory !== "all") {
           params.append("category", selectedCategory);
         }
-        const res = await fetch(`/api/news?${params.toString()}`);
+        const res = await fetch(`/api/news?${params.toString()}`, { headers: getToken() ? { Authorization: `Token ${getToken()}` } : {} });
         if (!res.ok) return;
         const data = await res.json();
         if (data.sources) {
@@ -170,7 +168,7 @@ export default function HomePage() {
           }
         }
 
-        const res = await fetch(`/api/news?${params.toString()}`);
+        const res = await fetch(`/api/news?${params.toString()}`, { headers: getToken() ? { Authorization: `Token ${getToken()}` } : {} });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -270,6 +268,20 @@ export default function HomePage() {
     fetchArticles(nextPage, true);
   };
 
+  const handleOpenPublisherStudio = () => {
+    if (!user) {
+      setIsAccountOpen(true);
+      showToast("Sign in with an author or editor account to publish");
+      return;
+    }
+    if (user.role === "reader") {
+      setIsAccountOpen(true);
+      showToast("This account is a reader. An editor must grant publisher access.");
+      return;
+    }
+    setIsStudioOpen(true);
+  };
+
   useEffect(() => {
     setPage(1);
     fetchArticles(1, false);
@@ -279,7 +291,7 @@ export default function HomePage() {
   const gridArticles = articles.length > 1 ? articles.slice(1) : [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faf9] text-[#112117] relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#f8faf9] text-[#112117] relative overflow-x-hidden pt-[112px]">
       
       {/* Top Ambient Glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[350px] bg-[radial-gradient(ellipse_at_top,rgba(22,131,79,0.04),transparent_70%)] pointer-events-none -z-10" />
@@ -302,6 +314,9 @@ export default function HomePage() {
         onClearSearch={handleClearSearch}
         bookmarksCount={bookmarks.length}
         onOpenBookmarks={() => setIsBookmarksOpen(true)}
+        user={user}
+        onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenStudio={handleOpenPublisherStudio}
       />
 
       {/* Category Bar */}
@@ -439,6 +454,8 @@ export default function HomePage() {
         )}
         onToggleBookmark={handleToggleBookmark}
         onShare={handleShare}
+        user={user}
+        onRequireSignIn={() => setIsAccountOpen(true)}
       />
 
       {/* Bookmarks Drawer */}
@@ -460,6 +477,13 @@ export default function HomePage() {
       />
 
       <Footer />
+      <AccountDrawer isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} user={user} onSignedIn={(account) => { setUser(account); chronicleApi("bookmarks").then((records) => setBookmarks(records.map(asFeedBookmark))); }} onSignedOut={() => { setUser(null); setBookmarks([]); }} />
+      <AuthorStudio
+        isOpen={isStudioOpen}
+        onClose={() => setIsStudioOpen(false)}
+        user={user}
+        onPublished={() => fetchArticles(1, false)}
+      />
 
     </div>
   );

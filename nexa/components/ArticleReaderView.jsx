@@ -21,6 +21,8 @@ import {
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
+import { chronicleApi, getToken } from "@/lib/chronicleApi";
+import ArticleDiscussion from "@/components/ArticleDiscussion";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -37,6 +39,9 @@ const LANGUAGES = [
 export default function ArticleReaderView({ article }) {
   const { speakingId, isPlaying, toggleNarration } = useAudioPlayer();
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkId, setBookmarkId] = useState(null);
+  const [user, setUser] = useState(null);
+  const [accountNotice, setAccountNotice] = useState("");
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState("text-base");
   const [summaryData, setSummaryData] = useState(null);
@@ -51,19 +56,19 @@ export default function ArticleReaderView({ article }) {
   const articleKey = article?.url || article?.title || article?.id;
   const isCurrentlySpeaking = speakingId === articleKey && isPlaying;
 
-  // Load bookmark status
+  // Restore authenticated account and server-backed bookmark status.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem("dispatch_news_bookmarks");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          setIsBookmarked(parsed.some((b) => b.title === article?.title || (b.url && b.url === article?.url)));
-        }
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
+    if (!article || !getToken()) return;
+    Promise.all([chronicleApi("auth/me"), chronicleApi("bookmarks")])
+      .then(([account, bookmarks]) => {
+        setUser(account);
+        const match = bookmarks.find((bookmark) => article.kind === "original"
+          ? bookmark.article?.id === article.article_id
+          : bookmark.external_article?.external_id === (article.external_id || article.id));
+        setIsBookmarked(Boolean(match));
+        setBookmarkId(match?.id || null);
+      })
+      .catch(() => {});
   }, [article]);
 
   // Load AI Executive Summary
@@ -123,24 +128,26 @@ export default function ArticleReaderView({ article }) {
   const imageSrc = article.urlToImage || dynamicFallback;
   const formattedDate = formatPublishedDate(article.publishedAt);
 
-  const handleToggleBookmark = () => {
+  const handleToggleBookmark = async () => {
+    if (!user) {
+      setAccountNotice("Sign in from the homepage to save articles and join the discussion.");
+      return;
+    }
     try {
-      const saved = localStorage.getItem("dispatch_news_bookmarks");
-      let list = saved ? JSON.parse(saved) : [];
-      if (!Array.isArray(list)) list = [];
-
-      const exists = list.some((b) => b.title === article.title || (b.url && b.url === article.url));
-      let updated;
-      if (exists) {
-        updated = list.filter((b) => b.title !== article.title && b.url !== article.url);
+      if (bookmarkId) {
+        await chronicleApi(`bookmarks/${bookmarkId}`, { method: "DELETE" });
         setIsBookmarked(false);
+        setBookmarkId(null);
       } else {
-        updated = [article, ...list].slice(0, 100);
+        const payload = article.kind === "original"
+          ? { kind: "original", article_id: article.article_id }
+          : { kind: "external", external: { external_id: article.external_id || article.id, provider: article.provider || "external", url: article.url, title: article.title, description: article.description || "", source: article.source, category: article.category } };
+        const bookmark = await chronicleApi("bookmarks", { method: "POST", body: JSON.stringify(payload) });
         setIsBookmarked(true);
+        setBookmarkId(bookmark.id);
       }
-      localStorage.setItem("dispatch_news_bookmarks", JSON.stringify(updated));
     } catch (e) {
-      console.warn("Bookmark error:", e);
+      setAccountNotice(e.message);
     }
   };
 
@@ -267,6 +274,7 @@ export default function ArticleReaderView({ article }) {
           </button>
         </div>
       </div>
+      {accountNotice && <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">{accountNotice}</p>}
 
       {/* Article Article Container */}
       <article className="rounded-2xl border border-[#e1ece5] bg-white overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
@@ -426,13 +434,19 @@ export default function ArticleReaderView({ article }) {
             )}
           </div>
 
+          <ArticleDiscussion
+            article={article}
+            user={user}
+            onRequireSignIn={() => setAccountNotice("Sign in from the homepage to join the discussion.")}
+          />
+
           {/* Source Attribution & Outbound Link */}
           <div className="mt-10 pt-6 border-t border-[#e1ece5] flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-[#738c7f]">
               Syndicated via official publisher wire by <strong>{article.source?.name || "the publisher"}</strong>.
             </p>
 
-            {article.url && (
+            {article.kind !== "original" && article.url && (
               <a
                 href={article.url}
                 target="_blank"

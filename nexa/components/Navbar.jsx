@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, Bookmark, X, Newspaper, ArrowRight, Sparkles, TrendingUp } from "lucide-react";
+import { Search, Bookmark, X, Newspaper, ArrowRight, Sparkles, TrendingUp, UserRound, PenLine } from "lucide-react";
 
 const TRENDING_SEARCHES = [
   "Artificial Intelligence",
@@ -19,6 +19,9 @@ export default function Navbar({
   onClearSearch,
   bookmarksCount,
   onOpenBookmarks,
+  user,
+  onOpenAccount,
+  onOpenStudio,
 }) {
   const [currentDate, setCurrentDate] = useState("");
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -71,7 +74,7 @@ export default function Navbar({
 
   return (
     <>
-      <header className="w-full bg-white/95 backdrop-blur-md border-b border-[#e1ece5] sticky top-0 z-40 transition-colors">
+      <header className="w-full bg-white/95 backdrop-blur-md border-b border-[#e1ece5] fixed top-0 left-0 right-0 z-40 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <div className="flex items-center justify-between gap-4 sm:gap-6">
 
@@ -142,6 +145,17 @@ export default function Navbar({
                     {bookmarksCount}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={onOpenStudio}
+                aria-label="Open publisher studio"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-[#16834f] hover:bg-[#126d41] border border-[#16834f] shadow-xs"
+              >
+                <PenLine className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Publisher Studio</span>
+              </button>
+              <button onClick={onOpenAccount} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#455c50] hover:text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5]">
+                <UserRound className="w-3.5 h-3.5 text-[#16834f]" /> <span className="hidden sm:inline">{user ? user.username : "Sign in"}</span>
               </button>
             </div>
 
