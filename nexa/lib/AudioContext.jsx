@@ -15,6 +15,15 @@ let currentActiveUtterance = null;
 export function AudioProvider({ children }) {
   const [speakingId, setSpeakingId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [voices, setVoices] = useState([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const refreshVoices = () => setVoices(window.speechSynthesis.getVoices());
+    refreshVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", refreshVoices);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", refreshVoices);
+  }, []);
 
   const stopNarration = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -40,13 +49,13 @@ export function AudioProvider({ children }) {
 
     // Pick the most natural-sounding voice available
     try {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
+      const availableVoices = voices.length ? voices : window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) {
         const preferredVoice =
-          voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Jenny") || v.name.includes("Guy") || v.name.includes("Aria"))) ||
-          voices.find((v) => v.lang.startsWith("en") && !v.localService) ||
-          voices.find((v) => v.lang.startsWith("en")) ||
-          voices[0];
+          availableVoices.find((v) => v.lang.startsWith("en") && (v.name.includes("Natural") || v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Jenny") || v.name.includes("Guy") || v.name.includes("Aria"))) ||
+          availableVoices.find((v) => v.lang.startsWith("en") && !v.localService) ||
+          availableVoices.find((v) => v.lang.startsWith("en")) ||
+          availableVoices[0];
         if (preferredVoice) {
           utterance.voice = preferredVoice;
         }
@@ -86,7 +95,7 @@ export function AudioProvider({ children }) {
       setSpeakingId(null);
       setIsPlaying(false);
     }
-  }, []);
+  }, [voices]);
 
   const toggleNarration = useCallback(
     (id, textToSpeak) => {

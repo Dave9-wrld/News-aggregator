@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { X, Trash2, Bookmark, BookOpen, Download, Search, ExternalLink } from "lucide-react";
+import Image from "next/image";
 
 export default function BookmarksDrawer({
   isOpen,
@@ -131,16 +132,18 @@ export default function BookmarksDrawer({
                     className="p-3 rounded-xl bg-white border border-[#e1ece5] hover:border-[#a7ccb5] hover:shadow-xs transition-colors flex gap-3"
                   >
                     {article.urlToImage && (
-                      <img
-                        src={article.urlToImage}
-                        alt=""
-                        referrerPolicy="no-referrer"
-                        className="w-14 h-14 rounded-lg object-cover shrink-0 bg-[#f0f5f2]"
-                        onError={(e) => { 
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.style.display = "none"; 
-                        }}
-                      />
+                      <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#f0f5f2]">
+                        <Image
+                          src={article.urlToImage}
+                          alt=""
+                          fill
+                          unoptimized={!article.urlToImage.startsWith("https://images.unsplash.com/")}
+                          sizes="56px"
+                          referrerPolicy="no-referrer"
+                          className="object-cover"
+                          onError={(e) => { e.currentTarget.style.display = "none"; }}
+                        />
+                      </div>
                     )}
 
                     <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -200,7 +203,7 @@ export default function BookmarksDrawer({
 
           <div className="pt-4 border-t border-[#e1ece5] text-center">
             <p className="text-[11px] text-[#738c7f]">
-              Saved locally in browser storage • Exportable anytime
+              Synced securely to your Chronicle account • Exportable anytime
             </p>
           </div>
 

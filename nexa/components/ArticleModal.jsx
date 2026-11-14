@@ -9,6 +9,7 @@ import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
 import ArticleDiscussion from "@/components/ArticleDiscussion";
+import Image from "next/image";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -173,9 +174,12 @@ export default function ArticleModal({
         
         {/* Top Image Banner */}
         <div className="relative h-56 sm:h-72 w-full bg-[#f0f5f2] shrink-0 border-b border-[#e1ece5]">
-          <img
+          <Image
             src={imageSrc}
             alt={article.title}
+            fill
+            unoptimized={!imageSrc.startsWith("https://images.unsplash.com/")}
+            sizes="(max-width: 768px) 100vw, 800px"
             referrerPolicy="no-referrer"
             onError={(e) => { 
               e.currentTarget.onerror = null;
@@ -369,7 +373,7 @@ export default function ArticleModal({
             )}
 
             {currentContent && currentContent !== currentDesc && (
-              <p className="text-[#455c50] leading-relaxed">
+              <p className="text-[#455c50] leading-relaxed whitespace-pre-line">
                 {currentContent}
               </p>
             )}

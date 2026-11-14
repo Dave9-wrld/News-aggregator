@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --bg-primary: #f8faf9;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
@@ -20,6 +21,36 @@
   --brand-green-light: #eaf5ee;
   
   --accent-crimson: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg-primary: #0d1711;
+    --bg-secondary: #132119;
+    --bg-card: #132119;
+    --bg-muted: #192a20;
+    --bg-accent-tint: #1c3527;
+    --border-color: #294536;
+    --border-light: #20392b;
+    --border-accent: #3d7355;
+    --text-primary: #edf7f0;
+    --text-secondary: #bdd0c3;
+    --text-muted: #91aa99;
+    --brand-green: #45c984;
+    --brand-green-hover: #6bdd9e;
+    --brand-green-light: #1c3527;
+  }
+
+  [class*="bg-[#f8faf9]"] { background-color: var(--bg-primary) !important; }
+  [class*="bg-[#f0f5f2]"] { background-color: var(--bg-muted) !important; }
+  [class*="bg-[#eaf5ee]"] { background-color: var(--bg-accent-tint) !important; }
+  [class*="bg-white"] { background-color: var(--bg-secondary) !important; }
+  [class*="text-[#112117]"] { color: var(--text-primary) !important; }
+  [class*="text-[#455c50]"] { color: var(--text-secondary) !important; }
+  [class*="text-[#738c7f]"] { color: var(--text-muted) !important; }
+  [class*="border-[#e1ece5]"] { border-color: var(--border-color) !important; }
+  [class*="border-[#a7ccb5]"] { border-color: var(--border-accent) !important; }
 }
 
 body {

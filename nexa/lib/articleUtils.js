@@ -116,6 +116,6 @@ export function formatPublishedDate(dateStr) {
 
 export function calculateReadTime(text = "") {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
-  const minutes = Math.max(1, Math.ceil((words + 180) / 180));
+  const minutes = Math.max(1, Math.ceil(words / 200));
   return `${minutes}m read`;
 }

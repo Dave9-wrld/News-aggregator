@@ -2,23 +2,25 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const AUTH_COOKIE = "chronicle_session";
+
 // The browser talks to this same-origin route; Django owns provider credentials.
 export async function GET(request) {
   const incoming = new URL(request.url);
   const backend = process.env.DJANGO_API_URL || "http://127.0.0.1:8000/api";
-  const target = new URL(`${backend}/feed/`);
+  const isSources = incoming.searchParams.get("type") === "sources";
+  const target = new URL(`${backend}/${isSources ? "sources" : "feed"}/`);
   for (const [key, value] of incoming.searchParams) {
-    if (key !== "type" && key !== "sources" && key !== "sortBy") target.searchParams.append(key, value);
-  }
-  if (incoming.searchParams.get("type") === "sources") {
-    return NextResponse.json({ status: "ok", source: "django-feed", sources: [] });
+    if (key !== "type" && key !== "sortBy") target.searchParams.append(key, value);
   }
   if (incoming.searchParams.get("type") === "search") {
     target.searchParams.set("q", incoming.searchParams.get("q") || "");
   }
   try {
     const response = await fetch(target, {
-      headers: request.headers.get("authorization") ? { authorization: request.headers.get("authorization") } : {},
+      headers: request.cookies.get(AUTH_COOKIE)?.value
+        ? { authorization: `Token ${request.cookies.get(AUTH_COOKIE).value}` }
+        : {},
       cache: "no-store",
     });
     return new NextResponse(await response.text(), {

@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Search, Bookmark, X, Newspaper, ArrowRight, Sparkles, TrendingUp, UserRound, PenLine } from "lucide-react";
+import Link from "next/link";
+import { SITE_NAME } from "@/lib/site";
 
 const TRENDING_SEARCHES = [
   "Artificial Intelligence",
@@ -19,6 +21,7 @@ export default function Navbar({
   onClearSearch,
   bookmarksCount,
   onOpenBookmarks,
+  onOpenBriefing,
   user,
   onOpenAccount,
   onOpenStudio,
@@ -80,21 +83,21 @@ export default function Navbar({
 
             {/* Left: Logo & Masthead */}
             <div className="flex items-center gap-3 shrink-0">
-              <a href="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none">
+              <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none">
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#eaf5ee] border border-[#a7ccb5] flex items-center justify-center text-[#16834f] group-hover:bg-[#16834f] group-hover:text-white group-hover:border-[#16834f] group-hover:shadow-[0_2px_10px_rgba(22,131,79,0.25)] transition-all duration-300">
                   <Newspaper className="w-4 h-4 sm:w-5 sm:h-5 transition-transform group-hover:scale-105" />
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
                     <h1 className="text-base sm:text-lg font-bold tracking-tight text-[#112117] leading-none font-sans">
-                      THE GLOBAL CHRONICLE
+                      {SITE_NAME.toUpperCase()}
                     </h1>
                   </div>
                   <p className="text-[10px] uppercase tracking-[0.16em] text-[#738c7f] font-mono mt-1 hidden sm:block">
                     {currentDate}
                   </p>
                 </div>
-              </a>
+              </Link>
             </div>
 
             {/* Center: Desktop Search */}
@@ -130,6 +133,15 @@ export default function Navbar({
                 className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg bg-[#f0f5f2] border border-[#e1ece5] text-[#455c50] hover:text-[#112117] hover:border-[#a7ccb5] transition-colors"
               >
                 <Search className="w-4 h-4 text-[#16834f]" />
+              </button>
+
+              <button
+                onClick={onOpenBriefing}
+                aria-label="Open morning briefing"
+                className="flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg bg-[#f0f5f2] hover:bg-[#eaf5ee] text-[#455c50] hover:text-[#112117] border border-[#e1ece5] hover:border-[#a7ccb5] text-xs font-medium transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#16834f]" />
+                <span className="hidden xl:inline">Briefing</span>
               </button>
 
               {/* Bookmarks Button */}

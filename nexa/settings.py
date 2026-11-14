@@ -161,6 +161,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 15,
+    'DEFAULT_THROTTLE_RATES': {
+        'register': '5/hour',
+        'login': '10/minute',
+        'password_reset': '3/hour',
+        'password_reset_confirm': '5/hour',
+    },
 }
 
 

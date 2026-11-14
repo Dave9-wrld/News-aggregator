@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { AudioProvider } from "@/lib/AudioContext";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,10 +20,11 @@ const newsreader = Newsreader({
 });
 
 export const metadata = {
-  title: "The Global Chronicle | Real-Time News & Intelligence",
+  metadataBase: new URL(SITE_URL),
+  title: `${SITE_NAME} | Real-Time News & Intelligence`,
   description: "Real-time global news journal covering world headlines, technology, business markets, science, and verified international reporting.",
   openGraph: {
-    title: "The Global Chronicle | Real-Time News & Intelligence",
+    title: `${SITE_NAME} | Real-Time News & Intelligence`,
     description: "Real-time global news journal covering world headlines, technology, business markets, and verified international reporting.",
     type: "website",
   },

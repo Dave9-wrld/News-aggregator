@@ -21,8 +21,9 @@ import {
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
-import { chronicleApi, getToken } from "@/lib/chronicleApi";
+import { asResults, chronicleApi } from "@/lib/chronicleApi";
 import ArticleDiscussion from "@/components/ArticleDiscussion";
+import Image from "next/image";
 
 const LANGUAGES = [
   { code: "en", label: "English" },
@@ -58,11 +59,11 @@ export default function ArticleReaderView({ article }) {
 
   // Restore authenticated account and server-backed bookmark status.
   useEffect(() => {
-    if (!article || !getToken()) return;
-    Promise.all([chronicleApi("auth/me"), chronicleApi("bookmarks")])
+    if (!article) return;
+    Promise.all([chronicleApi("auth/me"), chronicleApi("bookmarks?page_size=100")])
       .then(([account, bookmarks]) => {
         setUser(account);
-        const match = bookmarks.find((bookmark) => article.kind === "original"
+        const match = asResults(bookmarks).find((bookmark) => article.kind === "original"
           ? bookmark.article?.id === article.article_id
           : bookmark.external_article?.external_id === (article.external_id || article.id));
         setIsBookmarked(Boolean(match));
@@ -281,9 +282,12 @@ export default function ArticleReaderView({ article }) {
         
         {/* Banner Image */}
         <div className="relative h-64 sm:h-96 w-full bg-[#f0f5f2] border-b border-[#e1ece5]">
-          <img
+          <Image
             src={imageSrc}
             alt={article.title}
+            fill
+            unoptimized={!imageSrc.startsWith("https://images.unsplash.com/")}
+            sizes="(max-width: 768px) 100vw, 896px"
             referrerPolicy="no-referrer"
             onError={(e) => {
               e.currentTarget.onerror = null;
@@ -428,7 +432,7 @@ export default function ArticleReaderView({ article }) {
             )}
 
             {currentContent && currentContent !== currentDesc && (
-              <p className="text-[#455c50] leading-relaxed">
+              <p className="text-[#455c50] leading-relaxed whitespace-pre-line">
                 {currentContent}
               </p>
             )}

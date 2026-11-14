@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Pencil, PenLine, Send, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Pencil, PenLine, RotateCcw, Send, Trash2, X } from "lucide-react";
 import { chronicleApi } from "@/lib/chronicleApi";
 
 const emptyForm = { title: "", body: "", category: "general", cover_image: "", cover_image_file: null };
@@ -12,14 +12,15 @@ export default function AuthorStudio({ isOpen, onClose, user, onPublished }) {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [notice, setNotice] = useState("");
+  const userRole = user?.role;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setArticles(await chronicleApi("articles/mine"));
-      if (user?.role === "editor") setEditorialQueue(await chronicleApi("articles/editorial"));
+      if (userRole === "editor") setEditorialQueue(await chronicleApi("articles/editorial"));
     } catch (error) { setNotice(error.message); }
-  };
-  useEffect(() => { if (isOpen) load(); }, [isOpen, user?.role]);
+  }, [userRole]);
+  useEffect(() => { if (isOpen) load(); }, [isOpen, load]);
   if (!isOpen) return null;
 
   const resetForm = () => { setForm(emptyForm); setEditingId(null); };
@@ -62,6 +63,13 @@ export default function AuthorStudio({ isOpen, onClose, user, onPublished }) {
       onPublished?.();
     } catch (error) { setNotice(error.message); }
   };
+  const returnToDraft = async (id) => {
+    try {
+      await chronicleApi(`articles/${id}/return-to-draft`, { method: "POST" });
+      setNotice("Article returned to the author as a draft.");
+      await load();
+    } catch (error) { setNotice(error.message); }
+  };
 
   return <div className="fixed inset-0 z-50 overflow-y-auto bg-[#112117]/40 p-4">
     <div className="mx-auto my-8 max-w-3xl rounded-2xl bg-white p-6 shadow-2xl">
@@ -73,7 +81,10 @@ export default function AuthorStudio({ isOpen, onClose, user, onPublished }) {
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#16834f]">Editorial queue ({editorialQueue.length})</h3>
         <div className="mt-3 space-y-2">{editorialQueue.length === 0 ? <p className="text-xs text-[#455c50]">No submitted articles are waiting for approval.</p> : editorialQueue.map((article) => <div key={article.id} className="flex items-center justify-between gap-3 rounded-lg bg-white p-3 border border-[#e1ece5]">
           <div><p className="text-sm font-semibold text-[#112117]">{article.title}</p><p className="text-[10px] text-[#738c7f]">By {article.author?.username}</p></div>
-          <button type="button" onClick={() => publish(article.id)} className="flex items-center gap-1.5 rounded-lg bg-[#16834f] px-3 py-2 text-xs font-bold text-white"><CheckCircle2 className="w-3.5 h-3.5"/> Publish</button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => returnToDraft(article.id)} className="flex items-center gap-1.5 rounded-lg border border-[#e1ece5] px-3 py-2 text-xs font-bold text-[#455c50]"><RotateCcw className="w-3.5 h-3.5"/> Return</button>
+            <button type="button" onClick={() => publish(article.id)} className="flex items-center gap-1.5 rounded-lg bg-[#16834f] px-3 py-2 text-xs font-bold text-white"><CheckCircle2 className="w-3.5 h-3.5"/> Publish</button>
+          </div>
         </div>)}</div>
       </div>}
       <form onSubmit={save} className="mt-5 grid gap-3">
@@ -84,7 +95,17 @@ export default function AuthorStudio({ isOpen, onClose, user, onPublished }) {
         </div>
         <label className="rounded-lg border border-dashed border-[#a7ccb5] bg-[#f8faf9] p-3 text-xs text-[#455c50]">
           Upload cover image (JPG, PNG, WebP or GIF, up to 5 MB)
-          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setForm({...form, cover_image_file: event.target.files?.[0] || null})} className="mt-2 block w-full"/>
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => {
+            const file = event.target.files?.[0] || null;
+            if (file && file.size > 5 * 1024 * 1024) {
+              setNotice("Cover images must be 5 MB or smaller.");
+              event.target.value = "";
+              setForm({...form, cover_image_file: null});
+              return;
+            }
+            setNotice("");
+            setForm({...form, cover_image_file: file});
+          }} className="mt-2 block w-full"/>
         </label>
         <textarea required minLength="20" value={form.body} onChange={(event) => setForm({...form, body: event.target.value})} placeholder="Write your original reporting…" className="min-h-32 rounded-lg border border-[#e1ece5] p-2.5"/>
         <div className="flex gap-2">

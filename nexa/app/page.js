@@ -12,7 +12,7 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import Footer from "@/components/Footer";
 import AccountDrawer from "@/components/AccountDrawer";
 import AuthorStudio from "@/components/AuthorStudio";
-import { chronicleApi, getToken } from "@/lib/chronicleApi";
+import { asResults, chronicleApi } from "@/lib/chronicleApi";
 import { Search, AlertCircle, ChevronRight, Check, AlertTriangle, ArrowUp } from "lucide-react";
 
 const PROVIDER_LABELS = {
@@ -71,8 +71,7 @@ export default function HomePage() {
 
   // Restore the account and its server-side reading list.
   useEffect(() => {
-    if (!getToken()) return;
-    chronicleApi("auth/me").then((account) => { setUser(account); return chronicleApi("bookmarks"); }).then((records) => setBookmarks(records.map(asFeedBookmark))).catch(() => {});
+    chronicleApi("auth/me").then((account) => { setUser(account); return chronicleApi("bookmarks?page_size=100"); }).then((records) => setBookmarks(asResults(records).map(asFeedBookmark))).catch(() => {});
   }, []);
 
   const saveBookmarks = (newBookmarks) => {
@@ -125,7 +124,7 @@ export default function HomePage() {
         if (selectedCategory && selectedCategory !== "all") {
           params.append("category", selectedCategory);
         }
-        const res = await fetch(`/api/news?${params.toString()}`, { headers: getToken() ? { Authorization: `Token ${getToken()}` } : {} });
+        const res = await fetch(`/api/news?${params.toString()}`);
         if (!res.ok) return;
         const data = await res.json();
         if (data.sources) {
@@ -168,7 +167,7 @@ export default function HomePage() {
           }
         }
 
-        const res = await fetch(`/api/news?${params.toString()}`, { headers: getToken() ? { Authorization: `Token ${getToken()}` } : {} });
+        const res = await fetch(`/api/news?${params.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
@@ -228,7 +227,7 @@ export default function HomePage() {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
-  }, [searchTerm]);
+  }, [searchTerm, activeQuery]);
 
   const handleSearchSubmit = (e) => {
     e?.preventDefault();
@@ -314,6 +313,7 @@ export default function HomePage() {
         onClearSearch={handleClearSearch}
         bookmarksCount={bookmarks.length}
         onOpenBookmarks={() => setIsBookmarksOpen(true)}
+        onOpenBriefing={() => setIsBriefingOpen(true)}
         user={user}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenStudio={handleOpenPublisherStudio}
@@ -477,7 +477,7 @@ export default function HomePage() {
       />
 
       <Footer />
-      <AccountDrawer isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} user={user} onSignedIn={(account) => { setUser(account); chronicleApi("bookmarks").then((records) => setBookmarks(records.map(asFeedBookmark))); }} onSignedOut={() => { setUser(null); setBookmarks([]); }} />
+      <AccountDrawer isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} user={user} onSignedIn={(account) => { setUser(account); chronicleApi("bookmarks?page_size=100").then((records) => setBookmarks(asResults(records).map(asFeedBookmark))); }} onSignedOut={() => { setUser(null); setBookmarks([]); }} />
       <AuthorStudio
         isOpen={isStudioOpen}
         onClose={() => setIsStudioOpen(false)}

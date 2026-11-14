@@ -1,7 +1,7 @@
-import { FALLBACK_ARTICLES } from "@/lib/mockNews";
-import { getLiveGoogleNews } from "@/lib/rssNews";
-import { generateArticleId, decodeArticleId } from "@/lib/articleUtils";
+import { notFound } from "next/navigation";
+import { cache } from "react";
 import ArticleReaderView from "@/components/ArticleReaderView";
+import { SITE_NAME } from "@/lib/site";
 
 const BACKEND_URL = process.env.DJANGO_API_URL || "http://127.0.0.1:8000/api";
 
@@ -14,11 +14,10 @@ async function fetchBackend(path) {
   }
 }
 
-// Helper to look up or reconstruct article by ID
-async function findArticleById(id) {
+const findArticleById = cache(async (id) => {
   if (!id) return null;
 
-  if (id.startsWith("original-")) {
+  if (/^original-\d+$/.test(id)) {
     const article = await fetchBackend(`articles/${id.replace("original-", "")}/`);
     if (article) {
       const uploadedCover = article.cover_image_file
@@ -37,40 +36,29 @@ async function findArticleById(id) {
         author: article.author?.username,
         publishedAt: article.published_at || article.created_at,
         category: article.category,
+        comment_count: article.comment_count,
+        bookmarked: article.bookmarked,
       };
     }
   }
 
-  if (id.startsWith("ext_")) {
+  if (/^ext_[A-Za-z0-9_-]{1,120}$/.test(id)) {
     const article = await fetchBackend(`external-articles/${id}/`);
-    if (article) return article;
+    if (article) {
+      return {
+        ...article,
+        id: article.external_id || article.id || id,
+        external_id: article.external_id || article.id || id,
+        kind: "external",
+        url: article.url || article.canonical_url || "",
+        urlToImage: article.urlToImage || article.image_url || "",
+        source: article.source || { id: article.provider, name: article.source_name || article.provider || "External" },
+        publishedAt: article.publishedAt || article.published_at || "",
+      };
+    }
   }
-
-  // 1. Direct Base64url payload decoding
-  const decodedArticle = decodeArticleId(id);
-  if (decodedArticle) {
-    return decodedArticle;
-  }
-
-  // 2. Search fallback mock articles
-  const fallbackMatch = FALLBACK_ARTICLES.find(
-    (a) => a.id === id || generateArticleId(a) === id
-  );
-  if (fallbackMatch) return fallbackMatch;
-
-  // 3. Search live wire RSS articles
-  try {
-    const liveArticles = await getLiveGoogleNews({ limit: 100 });
-    const liveMatch = liveArticles.find(
-      (a) => a.id === id || generateArticleId(a) === id
-    );
-    if (liveMatch) return liveMatch;
-  } catch (err) {
-    console.warn("Live article lookup notice:", err.message);
-  }
-
   return null;
-}
+});
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -78,13 +66,13 @@ export async function generateMetadata({ params }) {
 
   if (!article) {
     return {
-      title: "Article Not Found | The Global Chronicle",
+      title: `Article Not Found | ${SITE_NAME}`,
       description: "The requested article could not be located.",
     };
   }
 
   return {
-    title: `${article.title} | The Global Chronicle`,
+    title: `${article.title} | ${SITE_NAME}`,
     description: article.description || "Live international news reporting.",
     openGraph: {
       title: article.title,
@@ -105,6 +93,7 @@ export async function generateMetadata({ params }) {
 export default async function ArticlePage({ params }) {
   const { id } = await params;
   const article = await findArticleById(id);
+  if (!article) notFound();
 
   return (
     <main className="min-h-screen bg-[#f8faf9] text-[#112117]">

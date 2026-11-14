@@ -4,6 +4,7 @@ import { Bookmark, Share2, Clock, ChevronRight, Volume2, VolumeX, MessageCircle,
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
+import Image from "next/image";
 
 export default function HeroFeatured({
   article,
@@ -40,9 +41,13 @@ export default function HeroFeatured({
             onClick={() => onOpenArticle(article)}
             className="lg:col-span-7 relative h-60 sm:h-80 lg:h-auto min-h-[260px] sm:min-h-[340px] rounded-xl overflow-hidden bg-[#f0f5f2] border border-[#e1ece5] group cursor-pointer"
           >
-            <img
+            <Image
               src={imageSrc}
               alt={article.title || "Lead story image"}
+              fill
+              unoptimized={!imageSrc.startsWith("https://images.unsplash.com/")}
+              preload
+              sizes="(max-width: 1024px) 100vw, 58vw"
               referrerPolicy="no-referrer"
               onError={(e) => { 
                 e.currentTarget.onerror = null;

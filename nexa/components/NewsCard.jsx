@@ -4,6 +4,7 @@ import { Bookmark, Share2, Clock, Volume2, VolumeX, MessageCircle } from "lucide
 import { getDynamicArticleImage } from "@/lib/imageUtils";
 import { useAudioPlayer } from "@/lib/AudioContext";
 import { formatPublishedDate } from "@/lib/articleUtils";
+import Image from "next/image";
 
 export default function NewsCard({
   article,
@@ -64,16 +65,18 @@ export default function NewsCard({
         onClick={() => onOpenArticle(article)}
         className="relative h-44 sm:h-48 w-full rounded-lg overflow-hidden bg-[#f0f5f2] mb-3.5 cursor-pointer border border-[#e1ece5]"
       >
-        <img
+        <Image
           src={imageSrc}
           alt={article.title || "News article image"}
+          fill
+          unoptimized={!imageSrc.startsWith("https://images.unsplash.com/")}
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
           referrerPolicy="no-referrer"
           onError={(e) => { 
             e.currentTarget.onerror = null;
             e.currentTarget.src = dynamicFallback; 
           }}
           className="h-full w-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
-          loading="lazy"
         />
         {/* Subtle Bottom Vignette */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
