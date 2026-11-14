@@ -22,17 +22,21 @@ class ArticleAdmin(admin.ModelAdmin):
 
     @admin.action(description='Publish selected submitted articles')
     def publish_submitted(self, request, queryset):
+        now = timezone.now()
         updated = queryset.filter(status=Article.Status.SUBMITTED).update(
             status=Article.Status.PUBLISHED,
-            published_at=timezone.now(),
+            published_at=now,
+            updated_at=now,
         )
         self.message_user(request, f'{updated} submitted article(s) published.')
 
     @admin.action(description='Return selected articles to draft')
     def return_to_draft(self, request, queryset):
+        now = timezone.now()
         updated = queryset.exclude(status=Article.Status.PUBLISHED).update(
             status=Article.Status.DRAFT,
             submitted_at=None,
+            updated_at=now,
         )
         self.message_user(request, f'{updated} article(s) returned to draft.')
 

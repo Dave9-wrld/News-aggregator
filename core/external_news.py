@@ -110,7 +110,12 @@ def fetch_external_news(*, query='', category='general', country='us', page=1, p
 
     A failed provider is deliberately non-fatal: callers can still render local reporting.
     """
-    cache_key = f'chronicle:feed:{query}:{category}:{country}:{page}:{page_size}'
+    cache_payload = json.dumps(
+        [query, category, country, page, page_size],
+        ensure_ascii=True,
+        separators=(',', ':'),
+    )
+    cache_key = f"chronicle:feed:{hashlib.sha256(cache_payload.encode()).hexdigest()}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached

@@ -1,23 +1,47 @@
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.mail import send_mail
-from django.db.models import Count, Q
+from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .external_news import fetch_external_news, persist_external_article
 from .models import Article, Bookmark, Comment, ExternalArticle
 from .permissions import is_author, is_editor
 from .serializers import ArticleSerializer, BookmarkSerializer, CommentSerializer, RegistrationSerializer, UserSerializer
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 15
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+def _positive_int(value, default, maximum):
+    try:
+        return min(maximum, max(1, int(value)))
+    except (TypeError, ValueError):
+        return default
+
+
+def _article_queryset_for(user):
+    queryset = Article.objects.select_related('author').annotate(comment_count=Count('comments'))
+    if user.is_authenticated:
+        bookmarks = Bookmark.objects.filter(user=user, article_id=OuterRef('pk'))
+        return queryset.annotate(bookmarked=Exists(bookmarks))
+    return queryset.annotate(bookmarked=Value(False, output_field=BooleanField()))
 
 
 def _is_owner_or_editor(user, obj):
@@ -44,7 +68,7 @@ def _original_feed_item(article, bookmarked_ids, request=None):
         'category': article.category,
         'publishedAt': article.published_at.isoformat() if article.published_at else article.created_at.isoformat(),
         'tag': 'The Global Chronicle • Original',
-        'readTime': f"{max(1, round(len(article.body.split()) / 200))}m read",
+        'readTime': f"{max(1, (len(article.body.split()) + 199) // 200)}m read",
         'comment_count': article.comment_count,
         'bookmarked': article.id in bookmarked_ids,
     }
@@ -52,6 +76,8 @@ def _original_feed_item(article, bookmarked_ids, request=None):
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'register'
 
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
@@ -65,6 +91,8 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
 
     def post(self, request):
         user = authenticate(username=request.data.get('username', ''), password=request.data.get('password', ''))
@@ -91,6 +119,8 @@ class MeView(APIView):
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'password_reset'
 
     def post(self, request):
         email = request.data.get('email', '').strip()
@@ -105,6 +135,8 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'password_reset_confirm'
 
     def post(self, request):
         try:
@@ -113,8 +145,12 @@ class PasswordResetConfirmView(APIView):
         except (ValueError, TypeError, OverflowError, get_user_model().DoesNotExist):
             user = None
         token, password = request.data.get('token', ''), request.data.get('password', '')
-        if not user or not default_token_generator.check_token(user, token) or len(password) < 8:
-            return Response({'detail': 'The reset link is invalid or the password is too short.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not user or not default_token_generator.check_token(user, token):
+            return Response({'detail': 'The reset link is invalid or has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            validate_password(password, user=user)
+        except DjangoValidationError as exc:
+            return Response({'password': list(exc.messages)}, status=status.HTTP_400_BAD_REQUEST)
         user.set_password(password)
         user.save()
         Token.objects.filter(user=user).delete()
@@ -125,13 +161,16 @@ class FeedView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        page = max(1, int(request.query_params.get('page', 1)))
-        page_size = min(30, max(1, int(request.query_params.get('pageSize', 15))))
+        page = _positive_int(request.query_params.get('page'), 1, 10000)
+        page_size = _positive_int(request.query_params.get('pageSize'), 15, 30)
         query = request.query_params.get('q', '').strip()
         category = request.query_params.get('category', 'all')
         country = request.query_params.get('country', 'us')
+        source = request.query_params.get('sources', 'all')
 
         originals = Article.objects.filter(status=Article.Status.PUBLISHED).select_related('author').annotate(comment_count=Count('comments'))
+        if source not in {'all', 'the-global-chronicle'}:
+            originals = originals.none()
         if category and category != 'all':
             originals = originals.filter(category__iexact=category)
         if query:
@@ -147,7 +186,7 @@ class FeedView(APIView):
         original_start = (page - 1) * original_reserve
         original_page = list(originals[original_start:original_start + original_reserve])
         external_limit = max(0, page_size - len(original_page))
-        external, provider_errors, persisted = [], [], []
+        external, provider_errors = [], []
         if external_limit:
             external, provider_errors = fetch_external_news(
                 query=query,
@@ -156,8 +195,12 @@ class FeedView(APIView):
                 page=page,
                 page_size=external_limit,
             )
-            persisted = [persist_external_article(item) for item in external]
-        external_comments = dict(Comment.objects.filter(external_article__external_id__in=[x.external_id for x in persisted]).values('external_article__external_id').annotate(total=Count('id')).values_list('external_article__external_id', 'total'))
+            if source == 'the-global-chronicle':
+                external = []
+            elif source != 'all':
+                external = [item for item in external if item.get('provider') == source]
+        external_ids = [item['external_id'] for item in external]
+        external_comments = dict(Comment.objects.filter(external_article__external_id__in=external_ids).values('external_article__external_id').annotate(total=Count('id')).values_list('external_article__external_id', 'total'))
 
         items = [_original_feed_item(article, bookmarked_ids, request) for article in original_page]
         for item in external:
@@ -175,8 +218,10 @@ class ArticleListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        queryset = Article.objects.filter(status=Article.Status.PUBLISHED).select_related('author')
-        return Response(ArticleSerializer(queryset, many=True).data)
+        queryset = _article_queryset_for(request.user).filter(status=Article.Status.PUBLISHED)
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        return paginator.get_paginated_response(ArticleSerializer(page, many=True).data)
 
     def post(self, request):
         if not is_author(request.user):
@@ -210,7 +255,7 @@ class ArticleDetailView(APIView):
     permission_classes = [AllowAny]
 
     def get_object(self, request, pk):
-        article = get_object_or_404(Article.objects.select_related('author'), pk=pk)
+        article = get_object_or_404(_article_queryset_for(request.user), pk=pk)
         if article.status != Article.Status.PUBLISHED and article.author_id != getattr(request.user, 'id', None) and not is_editor(request.user):
             return None
         return article
@@ -297,6 +342,35 @@ class PublishArticleView(APIView):
         return Response(ArticleSerializer(article).data)
 
 
+class ReturnArticleToDraftView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not is_editor(request.user):
+            return Response({'detail': 'Editor role required.'}, status=status.HTTP_403_FORBIDDEN)
+        article = get_object_or_404(Article, pk=pk)
+        if article.status != Article.Status.SUBMITTED:
+            return Response({'detail': 'Only submitted articles can be returned.'}, status=status.HTTP_400_BAD_REQUEST)
+        article.status = Article.Status.DRAFT
+        article.submitted_at = None
+        article.save(update_fields=['status', 'submitted_at', 'updated_at'])
+        return Response(ArticleSerializer(article).data)
+
+
+class SourceListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        sources = [
+            {'id': 'the-global-chronicle', 'name': 'The Global Chronicle', 'category': 'general'},
+        ]
+        if settings.NEWS_API_KEY:
+            sources.append({'id': 'newsapi', 'name': 'NewsAPI', 'category': 'general'})
+        if settings.GNEWS_API_KEY:
+            sources.append({'id': 'gnews', 'name': 'GNews', 'category': 'general'})
+        return Response({'status': 'ok', 'source': 'django-feed', 'sources': sources})
+
+
 def _target_from_payload(payload):
     kind = payload.get('kind')
     if kind == 'original':
@@ -363,7 +437,9 @@ class BookmarkListView(APIView):
 
     def get(self, request):
         queryset = Bookmark.objects.filter(user=request.user).select_related('article__author', 'external_article')
-        return Response(BookmarkSerializer(queryset, many=True).data)
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(queryset, request, view=self)
+        return paginator.get_paginated_response(BookmarkSerializer(page, many=True).data)
 
     def post(self, request):
         target = _target_from_payload(request.data)

@@ -2,11 +2,14 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django.core.cache import cache
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import Article, Bookmark, Comment, Profile
+from .models import Article, Bookmark, Comment, ExternalArticle, Profile
 from .external_news import fetch_external_news
 
 
@@ -65,7 +68,7 @@ class ChronicleApiTests(TestCase):
 
     def test_author_can_upload_a_cover_image(self):
         self.auth_as(self.author)
-        cover = SimpleUploadedFile('cover.png', b'fake-png-content', content_type='image/png')
+        cover = SimpleUploadedFile('cover.png', b'\x89PNG\r\n\x1a\nvalid-signature', content_type='application/octet-stream')
         response = self.client.post('/api/articles/', {
             'title': 'Illustrated report',
             'body': 'A sufficiently detailed original article with an uploaded cover image.',
@@ -76,6 +79,27 @@ class ChronicleApiTests(TestCase):
         article = Article.objects.get(pk=response.data['id'])
         self.assertTrue(article.cover_image_file.name.endswith('cover.png'))
         article.cover_image_file.delete(save=False)
+
+    def test_cover_upload_rejects_spoofed_content_type(self):
+        self.auth_as(self.author)
+        cover = SimpleUploadedFile('cover.png', b'not-an-image', content_type='image/png')
+        response = self.client.post('/api/articles/', {
+            'title': 'Spoofed illustration',
+            'body': 'A sufficiently detailed original article with a spoofed upload.',
+            'category': 'science',
+            'cover_image_file': cover,
+        }, format='multipart')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('cover_image_file', response.data)
+
+    def test_registration_uses_django_password_validators(self):
+        response = self.client.post('/api/auth/register/', {
+            'username': 'weak-password-user',
+            'email': 'weak@example.com',
+            'password': '12345678',
+        }, format='json')
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('password', response.data)
 
     def test_editor_publishing_controls_visibility(self):
         self.auth_as(self.author)
@@ -158,6 +182,18 @@ class ChronicleApiTests(TestCase):
         self.assertEqual(duplicate.status_code, 200)
         self.assertEqual(Bookmark.objects.filter(user=self.reader).count(), 2)
 
+    def test_database_rejects_targets_with_zero_or_two_article_types(self):
+        external = ExternalArticle.objects.create(
+            external_id='ext_constraint',
+            provider='test',
+            canonical_url='https://example.com/constraint',
+            title='Constraint test',
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Comment.objects.create(user=self.reader, body='Invalid target')
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Bookmark.objects.create(user=self.reader, article=self.draft, external_article=external)
+
     @patch('core.views.fetch_external_news', return_value=([], ['newsapi', 'gnews']))
     def test_external_api_failure_keeps_original_feed_available(self, _fetch):
         self.draft.status = Article.Status.PUBLISHED
@@ -182,6 +218,49 @@ class ChronicleApiTests(TestCase):
         self.assertTrue(page_one)
         self.assertTrue(page_two)
         self.assertTrue({item['id'] for item in page_one}.isdisjoint({item['id'] for item in page_two}))
+
+    @patch('core.views.fetch_external_news')
+    def test_feed_does_not_persist_external_articles_and_handles_bad_page(self, fetch):
+        fetch.return_value = ([{
+            'id': 'ext_read_only',
+            'external_id': 'ext_read_only',
+            'kind': 'external',
+            'provider': 'gnews',
+            'title': 'Read-only headline',
+            'description': 'Provider summary',
+            'content': 'Provider summary',
+            'url': 'https://example.com/read-only',
+            'urlToImage': '',
+            'publishedAt': '',
+            'source': {'name': 'Example'},
+            'category': 'general',
+        }], [])
+        response = self.client.get('/api/feed/?page=abc&pageSize=invalid')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['page'], 1)
+        self.assertFalse(ExternalArticle.objects.filter(external_id='ext_read_only').exists())
+
+    def test_article_detail_includes_comment_and_bookmark_state(self):
+        self.draft.status = Article.Status.PUBLISHED
+        self.draft.save()
+        Comment.objects.create(user=self.reader, article=self.draft, body='One comment')
+        Bookmark.objects.create(user=self.reader, article=self.draft)
+        self.auth_as(self.reader)
+        response = self.client.get(reverse('article-detail', args=[self.draft.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['comment_count'], 1)
+        self.assertTrue(response.data['bookmarked'])
+
+    def test_editor_can_return_submission_to_draft(self):
+        self.draft.status = Article.Status.SUBMITTED
+        self.draft.submitted_at = timezone.now()
+        self.draft.save()
+        self.auth_as(self.editor)
+        response = self.client.post(reverse('article-return-to-draft', args=[self.draft.id]))
+        self.assertEqual(response.status_code, 200)
+        self.draft.refresh_from_db()
+        self.assertEqual(self.draft.status, Article.Status.DRAFT)
+        self.assertIsNone(self.draft.submitted_at)
 
     @patch('core.external_news._from_gnews')
     @patch('core.external_news._from_newsapi')

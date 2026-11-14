@@ -62,7 +62,7 @@ class ExternalArticle(models.Model):
     last_seen_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        indexes = [models.Index(fields=['external_id']), models.Index(fields=['-published_at'])]
+        indexes = [models.Index(fields=['-published_at'])]
 
     def __str__(self):
         return self.title
@@ -78,6 +78,15 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(article__isnull=False, external_article__isnull=True)
+                    | models.Q(article__isnull=True, external_article__isnull=False)
+                ),
+                name='comment_exactly_one_article_type',
+            ),
+        ]
 
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -93,6 +102,13 @@ class Bookmark(models.Model):
 
     class Meta:
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(article__isnull=False, external_article__isnull=True)
+                    | models.Q(article__isnull=True, external_article__isnull=False)
+                ),
+                name='bookmark_exactly_one_article_type',
+            ),
             models.UniqueConstraint(fields=['user', 'article'], name='unique_original_bookmark'),
             models.UniqueConstraint(fields=['user', 'external_article'], name='unique_external_bookmark'),
         ]
